@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+
+# 运行时生成的本地数据库
+*.db
+instance/
+
+# 虚拟环境
+venv/
+.venv/
+
+# 本地工具配置
+.claude/

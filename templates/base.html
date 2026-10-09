@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>错题权重分析 — 高考复习助手</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">错题权重分析</a>
+            <div class="nav-links">
+                <a href="/record" class="nav-link">记录错题</a>
+                <a href="/analysis" class="nav-link">权重分析</a>
+                <a href="/history" class="nav-link">错题历史</a>
+            </div>
+        </div>
+    </nav>
+    <main class="main-container">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

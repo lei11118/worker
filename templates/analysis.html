@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>权重分析与复习顺序</h1>
+    <p class="subtitle">权重 = 客观难度系数 × 主观感受因子 × 分值占比 × 错误频次加成</p>
+</div>
+
+<!-- 学科切换 -->
+<div class="subject-tabs">
+    {% for subj in subjects %}
+    <a href="/analysis/{{ subj.id }}" class="tab {{ 'active' if subj.id == subject_id else '' }}">
+        {{ subj.name }}
+    </a>
+    {% endfor %}
+</div>
+
+{% if current_subject %}
+<div class="analysis-header">
+    <h2>{{ current_subject.name }} — 知识点复习优先级</h2>
+    <span class="score-badge">{{ current_subject.total_score }}分 | {{ current_subject.exam_structure }}</span>
+</div>
+{% endif %}
+
+{% if weights %}
+<div class="table-container">
+    <table class="weight-table">
+        <thead>
+            <tr>
+                <th>排名</th>
+                <th>知识点</th>
+                <th>累计权重</th>
+                <th>错题数</th>
+                <th>客观难度分布</th>
+                <th>优先级</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for w in weights %}
+            <tr>
+                <td class="rank">{{ loop.index }}</td>
+                <td>{{ w.kp_name }}</td>
+                <td class="weight-value">{{ w.total_weight }}</td>
+                <td>{{ w.error_count }}</td>
+                <td>
+                    {% if w.base_errors > 0 %}<span class="tag tag-base">基础×{{ w.base_errors }}</span>{% endif %}
+                    {% if w.mid_errors > 0 %}<span class="tag tag-mid">中档×{{ w.mid_errors }}</span>{% endif %}
+                    {% if w.hard_errors > 0 %}<span class="tag tag-hard">压轴×{{ w.hard_errors }}</span>{% endif %}
+                </td>
+                <td><span class="priority-badge priority-{{ w.priority_class }}">{{ w.priority }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 图表 -->
+<div class="chart-container">
+    <canvas id="weightChart"></canvas>
+</div>
+
+<!-- 复习建议 -->
+<div class="review-plan">
+    <h3>建议复习顺序</h3>
+    <ol class="review-list">
+        {% for w in weights %}
+        <li class="review-item priority-{{ w.priority_class }}">
+            <div class="review-rank">{{ loop.index }}</div>
+            <div class="review-detail">
+                <strong>{{ w.kp_name }}</strong>
+                <span class="review-stats">权重 {{ w.total_weight }} | 错题 {{ w.error_count }} 次 | 优先级: {{ w.priority }}</span>
+            </div>
+        </li>
+        {% endfor %}
+    </ol>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>该学科暂无错题记录，<a href="/record">去记录第一条错题</a></p>
+</div>
+{% endif %}
+
+{% if weights %}
+<script>
+const ctx = document.getElementById('weightChart').getContext('2d');
+const labels = [{% for w in weights %}'{{ w.kp_name|escape }}'{% if not loop.last %},{% endif %}{% endfor %}];
+const data = [{% for w in weights %}{{ w.total_weight }}{% if not loop.last %},{% endif %}{% endfor %}];
+
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: '累计权重',
+            data: data,
+            backgroundColor: data.map((v, i) => {
+                const max = data[0];
+                if (v > max * 0.8) return '#dc3545';
+                if (v > max * 0.4) return '#ffc107';
+                if (v > max * 0.15) return '#17a2b8';
+                return '#28a745';
+            }),
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+        },
+        scales: {
+            x: { title: { display: true, text: '累计权重' } },
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>高考错题权重分析</h1>
+    <p class="subtitle">基于新高考全国卷命题结构 — 智能分析错题权重，找到最佳复习顺序</p>
+</div>
+
+<div class="subject-grid">
+    {% for item in stats %}
+    <div class="subject-card">
+        <div class="card-header">
+            <h3>{{ item.subject.name }}</h3>
+            <span class="score-badge">{{ item.subject.total_score }}分</span>
+        </div>
+        <div class="card-body">
+            <div class="stat-row">
+                <span class="stat-label">累计错题</span>
+                <span class="stat-value">{{ item.total_wrong }}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">需优先复习的知识点</span>
+                <span class="stat-value highlight">{{ item.high_priority_count }}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">试卷结构</span>
+                <span class="stat-desc">{{ item.subject.exam_structure }}</span>
+            </div>
+        </div>
+        <div class="card-footer">
+            <a href="/analysis/{{ item.subject.id }}" class="btn btn-primary">查看分析</a>
+            <a href="/record?subject={{ item.subject.id }}" class="btn btn-outline">记录错题</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="action-section">
+    <h2>快速开始</h2>
+    <div class="action-grid">
+        <a href="/record" class="action-card">
+            <div class="action-icon">&#10010;</div>
+            <h4>录入错题</h4>
+            <p>选择学科、题号与考点，标记做题感受</p>
+        </a>
+        <a href="/analysis" class="action-card">
+            <div class="action-icon">&#9733;</div>
+            <h4>查看权重</h4>
+            <p>查看各知识点权重排名与最优复习顺序</p>
+        </a>
+        <a href="/history" class="action-card">
+            <div class="action-icon">&#9776;</div>
+            <h4>错题历史</h4>
+            <p>浏览、筛选和删除已记录的错题</p>
+        </a>
+    </div>
+</div>
+
+<div class="info-box">
+    <h3>权重算法说明</h3>
+    <p>权重以<strong>得分难易度</strong>为首要因素：<em>基础题</em>（易得分）发生错误给予更高权重，其次为<em>中档题</em>和<em>压轴题</em>（最难得分）。同时结合你标记的做题感受（1-5分）和错误频次，帮助你快速定位最需要补漏的知识点，实现高效提分。</p>
+</div>
+{% endblock %}

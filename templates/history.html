@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>错题历史</h1>
+    <p class="subtitle">查看所有已记录的错题</p>
+</div>
+
+<!-- 筛选 -->
+<div class="filter-bar">
+    <div class="filter-group">
+        <label>筛选学科：</label>
+        <a href="/history" class="filter-tag {{ 'active' if not subject_id else '' }}">全部</a>
+        {% for subj in subjects %}
+        <a href="/history?subject_id={{ subj.id }}" class="filter-tag {{ 'active' if subject_id == subj.id else '' }}">{{ subj.name }}</a>
+        {% endfor %}
+    </div>
+    <div class="record-count">共 {{ records|length }} 条记录</div>
+</div>
+
+{% if records %}
+<div class="table-container">
+    <table class="history-table">
+        <thead>
+            <tr>
+                <th>学科</th>
+                <th>题号</th>
+                <th>题型</th>
+                <th>客观难度</th>
+                <th>分值</th>
+                <th>考点</th>
+                <th>做题感受</th>
+                <th>时间</th>
+                <th>备注</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in records %}
+            <tr>
+                <td>{{ r.subject_name }}</td>
+                <td>第{{ r.question_number }}题</td>
+                <td>{{ r.section_type }}</td>
+                <td><span class="tag tag-{{ 'base' if r.difficulty == '基础' else ('mid' if r.difficulty == '中档' else 'hard') }}">{{ r.difficulty }}</span></td>
+                <td>{{ r.base_score }}分</td>
+                <td>{{ r.kp_name }}</td>
+                <td class="rating-cell">
+                    <span class="rating-circle-small rating-{{ r.user_difficulty }}">{{ r.user_difficulty }}</span>
+                </td>
+                <td>{{ r.created_at }}</td>
+                <td class="notes-cell">{{ r.notes or '—' }}</td>
+                <td>
+                    <form method="POST" action="/delete/{{ r.id }}" onsubmit="return confirm('确认删除这条错题记录？');">
+                        <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>暂无错题记录，<a href="/record">去记录第一条错题</a></p>
+</div>
+{% endif %}
+{% endblock %}

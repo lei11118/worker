@@ -1,0 +1,4 @@
+cd 本文件夹路径
+pip install -r requirements.txt
+python app.py
+# 浏览器打开 http://localhost:5000

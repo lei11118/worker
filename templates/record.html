@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>记录错题</h1>
+    <p class="subtitle">选择学科、题号与考点，评估做题感受</p>
+</div>
+
+{% if request.args.get('success') %}
+<div class="alert alert-success">错题记录成功！可以继续录入或<a href="/analysis">查看权重分析</a>。</div>
+{% endif %}
+
+<div class="record-form-container">
+    <form method="POST" action="/record" id="record-form">
+        <!-- Step 1: 选择学科 -->
+        <div class="form-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+                <label class="form-label">选择学科</label>
+                <select name="subject_id" id="subject-select" class="form-select" required>
+                    <option value="">-- 请选择学科 --</option>
+                    {% for subj in subjects %}
+                    <option value="{{ subj.id }}" {% if request.args.get('subject')|string == subj.id|string %}selected{% endif %}>
+                        {{ subj.name }} ({{ subj.total_score }}分)
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Step 2: 选择题号 -->
+        <div class="form-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+                <label class="form-label">选择题号</label>
+                <select name="question_id" id="question-select" class="form-select" required disabled>
+                    <option value="">-- 请先选择学科 --</option>
+                </select>
+                <div id="question-info" class="question-info" style="display:none;">
+                    <span class="tag" id="q-type"></span>
+                    <span class="tag" id="q-score"></span>
+                    <span class="tag difficulty-tag" id="q-difficulty"></span>
+                    <span class="tag" id="q-knowledge"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: 选择考点 -->
+        <div class="form-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+                <label class="form-label">选择大致考点</label>
+                <select name="knowledge_point_id" id="kp-select" class="form-select" required disabled>
+                    <option value="">-- 请先选择学科 --</option>
+                </select>
+                <input type="text" id="kp-search" class="form-input" placeholder="搜索考点关键词..." style="display:none; margin-top:6px;">
+            </div>
+        </div>
+
+        <!-- Step 4: 做题感受 -->
+        <div class="form-step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+                <label class="form-label">这道题的做题感受</label>
+                <div class="difficulty-rating">
+                    {% for i in range(1, 6) %}
+                    <label class="rating-option">
+                        <input type="radio" name="user_difficulty" value="{{ i }}" required>
+                        <span class="rating-circle rating-{{ i }}">{{ i }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <div class="rating-labels">
+                    <span>1 — 很简单</span>
+                    <span>3 — 中等</span>
+                    <span>5 — 很难</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 备注 -->
+        <div class="form-step">
+            <div class="step-number">5</div>
+            <div class="step-content">
+                <label class="form-label">备注（可选）</label>
+                <textarea name="notes" class="form-input" rows="2" placeholder="错误原因或解题反思..."></textarea>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg">提交错题记录</button>
+    </form>
+</div>
+
+<script>
+const subjectSelect = document.getElementById('subject-select');
+const questionSelect = document.getElementById('question-select');
+const questionInfo = document.getElementById('question-info');
+const kpSelect = document.getElementById('kp-select');
+const kpSearch = document.getElementById('kp-search');
+
+// 学科变更 → 加载题号列表和考点列表
+subjectSelect.addEventListener('change', async () => {
+    const subjectId = subjectSelect.value;
+    questionSelect.disabled = !subjectId;
+    kpSelect.disabled = !subjectId;
+    questionInfo.style.display = 'none';
+
+    if (!subjectId) {
+        questionSelect.innerHTML = '<option value="">-- 请先选择学科 --</option>';
+        kpSelect.innerHTML = '<option value="">-- 请先选择学科 --</option>';
+        kpSearch.style.display = 'none';
+        return;
+    }
+
+    // 加载题号
+    const qResp = await fetch(`/api/questions/${subjectId}`);
+    const questions = await qResp.json();
+    questionSelect.innerHTML = '<option value="">-- 选择题号 --</option>';
+    questions.forEach(q => {
+        const opt = document.createElement('option');
+        opt.value = q.id;
+        opt.textContent = `第${q.question_number}题 — ${q.section_type} (${q.base_score}分) [${q.difficulty}]`;
+        opt.dataset.qtype = q.section_type;
+        opt.dataset.score = q.base_score;
+        opt.dataset.difficulty = q.difficulty;
+        opt.dataset.knowledge = q.typical_knowledge;
+        questionSelect.appendChild(opt);
+    });
+
+    // 加载考点
+    const kpResp = await fetch(`/api/knowledge_points/${subjectId}`);
+    const kps = await kpResp.json();
+    kpSelect.innerHTML = '<option value="">-- 选择考点 --</option>';
+    window._kps = kps;
+    renderKPOptions(kps);
+    kpSearch.style.display = 'block';
+    document.getElementById('kp-search').value = '';
+});
+
+// 题号变更 → 显示题目信息
+questionSelect.addEventListener('change', () => {
+    const opt = questionSelect.selectedOptions[0];
+    if (opt && opt.dataset.qtype) {
+        document.getElementById('q-type').textContent = opt.dataset.qtype;
+        document.getElementById('q-score').textContent = opt.dataset.score + '分';
+        document.getElementById('q-difficulty').textContent = '客观' + opt.dataset.difficulty;
+        document.getElementById('q-knowledge').textContent = opt.dataset.knowledge;
+        questionInfo.style.display = 'flex';
+    } else {
+        questionInfo.style.display = 'none';
+    }
+});
+
+// 考点搜索过滤
+kpSearch.addEventListener('input', () => {
+    const keyword = kpSearch.value.toLowerCase();
+    const filtered = window._kps.filter(kp =>
+        kp.name.toLowerCase().includes(keyword) || kp.category.toLowerCase().includes(keyword)
+    );
+    renderKPOptions(filtered);
+});
+
+function renderKPOptions(kps) {
+    kpSelect.innerHTML = '<option value="">-- 选择考点 --</option>';
+    kps.forEach(kp => {
+        const opt = document.createElement('option');
+        opt.value = kp.id;
+        opt.textContent = `${kp.category} — ${kp.name}`;
+        kpSelect.appendChild(opt);
+    });
+}
+
+// 加载时如果有默认学科则触发
+if (subjectSelect.value) {
+    subjectSelect.dispatchEvent(new Event('change'));
+}
+</script>
+{% endblock %}
